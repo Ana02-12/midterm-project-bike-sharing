@@ -1,0 +1,33 @@
+{
+  "features": [
+    "season",
+    "yr",
+    "mnth",
+    "hr",
+    "holiday",
+    "weekday",
+    "workingday",
+    "weathersit",
+    "temp",
+    "hum",
+    "windspeed"
+  ],
+  "params": {
+    "loss": "poisson",
+    "early_stopping": false,
+    "random_state": 42,
+    "learning_rate": 0.06405753233449049,
+    "max_iter": 575,
+    "max_leaf_nodes": 30,
+    "min_samples_leaf": 24,
+    "l2_regularization": 5.2477466025838915
+  },
+  "target": "cnt",
+  "train_period": [
+    "2011-01-01",
+    "2012-12-31"
+  ],
+  "n_rows": 17379,
+  "sklearn_version": "1.9.1",
+  "note": "weathersit 4 is merged into 3 before prediction"
+}
