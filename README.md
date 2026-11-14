@@ -345,24 +345,42 @@ The service is then available at `http://127.0.0.1:8000/docs`, the same as when 
 
 The container was checked with the same three requests as the local service: `/health` returns `status: ok`, the example request returns the same prediction as the local run, and an inconsistent request (`weekday = 6`, `workingday = 1`) returns 422.
 
-## Cloud deployment
+## Cloud Deployment
 
-The service (API and web page) is deployed on a VPS in Yandex Cloud and runs in Docker:
+The service is deployed on a virtual machine in Yandex Cloud (Ubuntu 24.04, Docker) and is available at:
 
-- Web page: http://84.201.156.91/
-- API documentation: http://84.201.156.91/docs
-- Health check: http://84.201.156.91/health
+**http://84.201.156.91/**
 
-Deployment steps on the server (Ubuntu 24.04):
+The page at `/` lets you enter the 11 features and get a prediction; the interactive API docs are at `/docs` and the health check at `/health`.
 
-    git clone https://github.com/Ana02-12/midterm-project-bike-sharing.git
-    cd midterm-project-bike-sharing
-    docker build -t bike-demand-api .
-    docker run -d --name bike-api --restart unless-stopped -p 80:8000 bike-demand-api
+The server holds only the Docker image, not the source code. The image is built on a local machine and transferred to the server as a file:
 
-Port 80 is opened for incoming traffic in the security group of the virtual machine.
-To update the service after changes: `git pull`, rebuild the image, remove the old container
-(`docker rm -f bike-api`) and run it again with the same command.
+1. Build the image and save it to a file (on the local machine, in the project root):
+
+   ```bash
+   docker build -t bike-demand-api .
+   docker save -o bike-demand-api.tar bike-demand-api
+   ```
+
+2. Copy `bike-demand-api.tar` to the server over SFTP (for example with FileZilla, using the SSH key of the VM).
+
+3. On the server, load the image and start the container:
+
+   ```bash
+   docker load -i bike-demand-api.tar
+   docker run -d --name bike-api --restart unless-stopped -p 80:8000 bike-demand-api
+   ```
+
+4. Check that the service works:
+
+   ```bash
+   docker ps
+   curl http://localhost/health
+   ```
+
+   The container maps port 80 of the VM to port 8000 of the API; port 80 is opened in the security group of the VM. The container restarts automatically after a server reboot.
+
+To update the deployment, rebuild the image, copy the new file, then run `docker stop bike-api`, `docker rm bike-api`, `docker rmi bike-demand-api`, and repeat steps 3-4.
 
 ## Limitations
 
