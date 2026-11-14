@@ -345,9 +345,24 @@ The service is then available at `http://127.0.0.1:8000/docs`, the same as when 
 
 The container was checked with the same three requests as the local service: `/health` returns `status: ok`, the example request returns the same prediction as the local run, and an inconsistent request (`weekday = 6`, `workingday = 1`) returns 422.
 
-## Cloud Deployment
+## Cloud deployment
 
-*To be added after deployment: platform, public URL, and an example request to the deployed service.*
+The service (API and web page) is deployed on a VPS in Yandex Cloud and runs in Docker:
+
+- Web page: http://84.201.156.91/
+- API documentation: http://84.201.156.91/docs
+- Health check: http://84.201.156.91/health
+
+Deployment steps on the server (Ubuntu 24.04):
+
+    git clone https://github.com/Ana02-12/midterm-project-bike-sharing.git
+    cd midterm-project-bike-sharing
+    docker build -t bike-demand-api .
+    docker run -d --name bike-api --restart unless-stopped -p 80:8000 bike-demand-api
+
+Port 80 is opened for incoming traffic in the security group of the virtual machine.
+To update the service after changes: `git pull`, rebuild the image, remove the old container
+(`docker rm -f bike-api`) and run it again with the same command.
 
 ## Limitations
 
