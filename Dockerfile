@@ -9,6 +9,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Application code and the trained model
 COPY predict.py train.py ./
 COPY models/bike_demand_model.joblib models/model_config.json models/
+COPY static ./static
 
 EXPOSE 8000
 

@@ -13,12 +13,13 @@ import joblib
 import pandas as pd
 import sklearn
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field, model_validator
 
 ROOT = Path(__file__).resolve().parent
 MODEL_PATH = ROOT / 'models' / 'bike_demand_model.joblib'
 CONFIG_PATH = ROOT / 'models' / 'model_config.json'
-
+STATIC_DIR = ROOT / 'static'
 # Filled once at startup (see lifespan below)
 artifacts = {}
 
@@ -47,6 +48,10 @@ app = FastAPI(
     ),
     lifespan=lifespan,
 )
+
+@app.get('/', include_in_schema=False)
+def index():
+    return FileResponse(STATIC_DIR / 'index.html')
 
 
 class BikeRequest(BaseModel):

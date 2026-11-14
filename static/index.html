@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bike Demand Predictor</title>
+<style>
+  :root {
+    --bg: #f4f6fa;
+    --card: #ffffff;
+    --accent: #2563eb;
+    --accent-dark: #1e40af;
+    --text: #1e293b;
+    --muted: #64748b;
+    --border: #e2e8f0;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    justify-content: center;
+    padding: 24px 16px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, .06);
+    padding: 28px;
+    width: 100%;
+    max-width: 560px;
+  }
+  h1 { margin: 0 0 4px; font-size: 22px; }
+  .subtitle { color: var(--muted); font-size: 14px; margin: 0 0 20px; }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 16px;
+  }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field.wide { grid-column: 1 / -1; }
+  label { font-size: 13px; font-weight: 600; }
+  label .hint { font-weight: 400; color: var(--muted); }
+  select, input[type="number"] {
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    background: #fff;
+  }
+  select:focus, input:focus { outline: 2px solid #bfdbfe; border-color: var(--accent); }
+  input[type="range"] { width: 100%; accent-color: var(--accent); }
+  .range-row { display: flex; align-items: center; gap: 10px; }
+  .range-value {
+    min-width: 44px; text-align: right;
+    font-variant-numeric: tabular-nums; font-size: 14px; font-weight: 600;
+  }
+  .switch-row { display: flex; align-items: center; gap: 8px; padding-top: 4px; }
+  .switch-row input { width: 18px; height: 18px; accent-color: var(--accent); }
+  .switch-row span { font-size: 14px; }
+  #workingday-box {
+    padding: 8px 10px; border-radius: 8px;
+    background: #eff6ff; border: 1px solid #dbeafe;
+    font-size: 14px; color: var(--accent-dark); font-weight: 600;
+  }
+  button {
+    margin-top: 22px; width: 100%;
+    padding: 12px; border: none; border-radius: 10px;
+    background: var(--accent); color: #fff;
+    font-size: 16px; font-weight: 600; cursor: pointer;
+    transition: background .15s;
+  }
+  button:hover { background: var(--accent-dark); }
+  button:disabled { background: #94a3b8; cursor: wait; }
+  .result {
+    margin-top: 18px; padding: 16px;
+    border-radius: 10px; text-align: center; font-size: 15px;
+    display: none;
+  }
+  .result.ok  { display: block; background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; }
+  .result.err { display: block; background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+  .result .num { font-size: 30px; font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>&#128690; Прогноз спроса на велосипеды</h1>
+  <p class="subtitle">Модель обучена на данных 2011&ndash;2012 гг. (yr: 0&nbsp;=&nbsp;2011, 1&nbsp;=&nbsp;2012)</p>
+
+  <div class="grid">
+    <div class="field">
+      <label>Сезон</label>
+      <select id="season">
+        <option value="1">1 — Зима</option>
+        <option value="2">2 — Весна</option>
+        <option value="3" selected>3 — Лето</option>
+        <option value="4">4 — Осень</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Год <span class="hint">(yr)</span></label>
+      <select id="yr">
+        <option value="0">0 — 2011</option>
+        <option value="1" selected>1 — 2012</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Месяц</label>
+      <select id="mnth"></select>
+    </div>
+
+    <div class="field">
+      <label>Час суток</label>
+      <select id="hr"></select>
+    </div>
+
+    <div class="field">
+      <label>День недели</label>
+      <select id="weekday">
+        <option value="0">0 — Воскресенье</option>
+        <option value="1">1 — Понедельник</option>
+        <option value="2">2 — Вторник</option>
+        <option value="3">3 — Среда</option>
+        <option value="4">4 — Четверг</option>
+        <option value="5">5 — Пятница</option>
+        <option value="6">6 — Суббота</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Погода <span class="hint">(weathersit)</span></label>
+      <select id="weathersit">
+        <option value="1" selected>1 — Ясно</option>
+        <option value="2">2 — Облачно / туман</option>
+        <option value="3">3 — Дождь / снег</option>
+        <option value="4">4 — Ливень / буря</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label class="switch-row">
+        <input type="checkbox" id="holiday"> <span>Праздничный день</span>
+      </label>
+    </div>
+
+    <div class="field">
+      <label>Рабочий день <span class="hint">(рассчитывается сам)</span></label>
+      <div id="workingday-box">workingday = 1</div>
+    </div>
+
+    <div class="field wide">
+      <label>Температура <span class="hint">(нормированная)</span></label>
+      <div class="range-row">
+        <input type="range" id="temp" min="0" max="1" step="0.01" value="0.70">
+        <span class="range-value" id="temp-v">0.70</span>
+      </div>
+    </div>
+
+    <div class="field wide">
+      <label>Влажность <span class="hint">(нормированная)</span></label>
+      <div class="range-row">
+        <input type="range" id="hum" min="0" max="1" step="0.01" value="0.50">
+        <span class="range-value" id="hum-v">0.50</span>
+      </div>
+    </div>
+
+    <div class="field wide">
+      <label>Скорость ветра <span class="hint">(нормированная)</span></label>
+      <div class="range-row">
+        <input type="range" id="windspeed" min="0" max="1" step="0.01" value="0.20">
+        <span class="range-value" id="windspeed-v">0.20</span>
+      </div>
+    </div>
+  </div>
+
+  <button id="btn">Предсказать спрос</button>
+  <div class="result" id="result"></div>
+</div>
+
+<script>
+// Страница открыта через сервер (http/https): запросы идут на тот же адрес.
+// Если открыта как файл (file://): идём на локальный API.
+const API_URL = location.protocol.startsWith('http') ? '' : 'http://127.0.0.1:8000';
+
+// Заполняем месяц (1-12) и час (0-23)
+const mnth = document.getElementById('mnth');
+const MONTHS = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+for (let i = 1; i <= 12; i++) {
+  mnth.add(new Option(`${i} — ${MONTHS[i-1]}`, i));
+}
+mnth.value = 7;
+
+const hr = document.getElementById('hr');
+for (let i = 0; i <= 23; i++) hr.add(new Option(`${String(i).padStart(2,'0')}:00`, i));
+hr.value = 17;
+
+// Слайдеры: живое обновление подписи
+const sliders = [
+  ['temp', 'temp-v'],
+  ['hum', 'hum-v'],
+  ['windspeed', 'windspeed-v'],
+];
+for (const [id, out] of sliders) {
+  const el = document.getElementById(id);
+  const label = document.getElementById(out);
+  el.addEventListener('input', () => label.textContent = Number(el.value).toFixed(2));
+}
+
+// workingday = 1 ровно для Пн-Пт без праздника (так же, как в валидаторе API)
+function updateWorkingday() {
+  const weekday = +document.getElementById('weekday').value;
+  const holiday = document.getElementById('holiday').checked ? 1 : 0;
+  const wd = (weekday >= 1 && weekday <= 5 && holiday === 0) ? 1 : 0;
+  document.getElementById('workingday-box').textContent = 'workingday = ' + wd;
+  return wd;
+}
+document.getElementById('weekday').addEventListener('change', updateWorkingday);
+document.getElementById('holiday').addEventListener('change', updateWorkingday);
+updateWorkingday();
+
+document.getElementById('btn').addEventListener('click', async () => {
+  const btn = document.getElementById('btn');
+  const result = document.getElementById('result');
+  btn.disabled = true;
+  btn.textContent = 'Считаю...';
+
+  const payload = {
+    season: +document.getElementById('season').value,
+    yr: +document.getElementById('yr').value,
+    mnth: +document.getElementById('mnth').value,
+    hr: +document.getElementById('hr').value,
+    holiday: document.getElementById('holiday').checked ? 1 : 0,
+    weekday: +document.getElementById('weekday').value,
+    workingday: updateWorkingday(),
+    weathersit: +document.getElementById('weathersit').value,
+    temp: +document.getElementById('temp').value,
+    hum: +document.getElementById('hum').value,
+    windspeed: +document.getElementById('windspeed').value,
+  };
+
+  try {
+    const resp = await fetch(API_URL + '/predict', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      const detail = Array.isArray(err.detail)
+        ? err.detail.map(d => `${d.loc?.slice(1).join('.')}: ${d.msg}`).join('; ')
+        : (err.detail || resp.statusText);
+      throw new Error(detail);
+    }
+    const data = await resp.json();
+    result.className = 'result ok';
+    result.innerHTML = `Прогноз аренд в этот час: <span class="num">${data.predicted_cnt}</span>`;
+  } catch (e) {
+    const offline = e instanceof TypeError;
+    result.className = 'result err';
+    result.textContent = offline
+           ? 'Не удалось связаться с API. Проверьте, что сервис запущен.'
+      : 'Ошибка: ' + e.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Предсказать спрос';
+  }
+});
+</script>
+</body>
+</html>
